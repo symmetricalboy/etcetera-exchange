@@ -1,5 +1,5 @@
 const { BskyAgent } = require('@atproto/api');
-const { genai } = require('google-genai');
+const { GoogleGenAI } = require('@google/genai');
 const Database = require('@etcetera/database');
 const winston = require('winston');
 const cron = require('cron');
@@ -25,7 +25,7 @@ const logger = winston.createLogger({
 class EtceteraBot {
     constructor() {
         this.agent = new BskyAgent({ service: 'https://bsky.social' });
-        this.geminiClient = genai.Client();
+        this.geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         this.botDid = null;
         this.isRunning = false;
         this.lastCheckTime = new Date();
@@ -209,11 +209,11 @@ If it's a gift_request, try to extract:
 Return JSON:
 {"type": "intent_type", "recipient_handle": "@handle", "object_description": "description", "confidence": 0.8}`;
 
-            const response = await this.geminiClient.models.generate_content({
-                model: 'gemini-2.5-flash',
+            const response = await this.geminiClient.models.generateContent({
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
                 config: {
-                    response_mime_type: "application/json",
+                    responseMimeType: "application/json",
                     temperature: 0.3
                 }
             });
@@ -354,12 +354,12 @@ Write a warm, whimsical response (under 200 characters) that:
 Be creative and magical!`;
 
         try {
-            const response = await this.geminiClient.models.generate_content({
-                model: 'gemini-2.5-flash',
+            const response = await this.geminiClient.models.generateContent({
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
                 config: {
                     temperature: 0.8,
-                    max_output_tokens: 300
+                    maxOutputTokens: 300
                 }
             });
 
@@ -390,12 +390,12 @@ Write a warm response (under 200 characters) that:
 Be joyful and community-minded!`;
 
         try {
-            const response = await this.geminiClient.models.generate_content({
-                model: 'gemini-2.5-flash',
+            const response = await this.geminiClient.models.generateContent({
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
                 config: {
                     temperature: 0.8,
-                    max_output_tokens: 300
+                    maxOutputTokens: 300
                 }
             });
 

@@ -1,11 +1,11 @@
-const { genai } = require('google-genai');
+const { GoogleGenAI } = require('@google/genai');
 const Database = require('@etcetera/database');
 const fs = require('fs-extra');
 const path = require('path');
 require('dotenv').config();
 
 // Initialize Gemini client
-const client = genai.Client();
+const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Object generation prompts for different rarities
 const GENERATION_PROMPTS = {
@@ -76,13 +76,13 @@ class ObjectGenerator {
         }
 
         try {
-            const response = await client.models.generate_content({
-                model: 'gemini-2.5-flash',
+            const response = await client.models.generateContent({
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
                 config: {
-                    response_mime_type: "application/json",
+                    responseMimeType: "application/json",
                     temperature: 0.9, // High creativity
-                    max_output_tokens: 4096
+                    maxOutputTokens: 4096
                 }
             });
 
@@ -112,14 +112,14 @@ class ObjectGenerator {
         const prompt = `A ${rarityModifier} ${objectName.toLowerCase()}: ${objectDescription}. ${style}. Clean background, centered object, high quality, no text or watermarks.`;
 
         try {
-            const result = await client.models.generate_images({
+            const result = await client.models.generateImages({
                 model: 'imagen-3.0-generate-002',
                 prompt: prompt,
                 config: {
-                    number_of_images: 1,
-                    output_mime_type: "image/jpeg",
-                    aspect_ratio: "1:1",
-                    person_generation: "DONT_ALLOW"
+                    numberOfImages: 1,
+                    outputMimeType: "image/jpeg",
+                    aspectRatio: "1:1",
+                    personGeneration: "DONT_ALLOW"
                 }
             });
 
