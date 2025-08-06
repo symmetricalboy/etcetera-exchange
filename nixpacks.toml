@@ -11,4 +11,4 @@ cmds = [
 ]
 
 [start]
-cmd = 'npm start --workspace=packages/web'
+cmd = 'chmod +x start.sh && ./start.sh'
