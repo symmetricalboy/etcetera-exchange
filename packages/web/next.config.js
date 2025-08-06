@@ -15,8 +15,8 @@ const nextConfig = {
       },
     ],
   },
-  // Enable standalone mode for Railway deployment
-  output: 'standalone',
+  // Removed standalone mode - causing issues in monorepo setup
+  // output: 'standalone',
 }
 
 module.exports = nextConfig
