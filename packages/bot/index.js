@@ -1,6 +1,6 @@
 const { BskyAgent } = require('@atproto/api');
 const { GoogleGenAI } = require('@google/genai');
-const Database = require('@etcetera/database');
+const Database = require('@etcetera/database/scalable-database');
 const winston = require('winston');
 const cron = require('cron');
 require('dotenv').config({ path: '../../.env' });
@@ -53,6 +53,10 @@ Response guidelines:
     async initialize() {
         try {
             logger.info('🤖 Initializing Etcetera Bot...');
+            
+            // Initialize Redis-backed database
+            await Database.initialize();
+            logger.info('✅ Scalable database layer initialized');
             
             // Login to Bluesky
             await this.agent.login({

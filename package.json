@@ -17,11 +17,15 @@
     "generate:objects": "cd packages/scripts && npm run generate:objects"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "turbo": "^1.13.0",
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "bull": "^4.16.5",
+    "redis": "^5.8.0"
   }
 }
