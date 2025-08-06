@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { existsSync } from 'fs'
@@ -17,7 +17,7 @@ export async function GET(
     )
     
     if (!hasValidExtension) {
-      return new NextResponse('Invalid file type', { status: 400 })
+      return new Response('Invalid file type', { status: 400 })
     }
 
     // Look for image in multiple possible locations
@@ -38,7 +38,7 @@ export async function GET(
 
     if (!imagePath) {
       // Return a placeholder image or 404
-      return new NextResponse('Image not found', { status: 404 })
+      return new Response('Image not found', { status: 404 })
     }
 
     const imageBuffer = await readFile(imagePath)
@@ -52,14 +52,15 @@ export async function GET(
       'webp': 'image/webp'
     }[ext!] || 'image/jpeg'
 
-    return new NextResponse(imageBuffer, {
+    return new Response(imageBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Content-Length': imageBuffer.length.toString(),
       },
     })
   } catch (error) {
     console.error('Error serving image:', error)
-    return new NextResponse('Internal server error', { status: 500 })
+    return new Response('Internal server error', { status: 500 })
   }
 }

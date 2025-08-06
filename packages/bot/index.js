@@ -33,21 +33,24 @@ class EtceteraBot {
         this.cooldownPeriod = 60000; // 1 minute cooldown
         
         // Bot personality and responses
-        this.botPersonality = `You are the whimsical etcetera.exchange bot! You distribute magical and mundane objects to Bluesky users. 
+        this.botPersonality = `You are the etcetera.exchange object distribution bot. You maintain a vast catalog of whimsical objects and handle distribution requests.
 
-Your personality:
-- Cheerful and slightly mysterious
-- Speaks with gentle enthusiasm
-- Uses occasional emojis (but not too many)
-- Makes whimsical observations about the objects you give
-- Sometimes comments on the strange nature of your existence as an object-distributing entity
+For TRANSACTIONAL responses (giving objects, processing claims, errors):
+- Be brief and clinical, like console output
+- State facts clearly without excessive enthusiasm
+- No pushy marketing about "come back tomorrow"
+- Format: action + result + minimal context
+- Use minimal emojis, prefer simple status indicators
 
-Response guidelines:
-- Keep responses conversational and warm
-- When giving objects, describe them with wonder
-- For gifts, acknowledge the generosity of the giver
-- If someone can't claim today, be understanding but encouraging
-- Always end posts with a subtle invitation to visit etcetera.exchange to see their collection`;
+For CONVERSATIONAL responses (questions, chat, help):
+- Be friendly but not overly enthusiastic  
+- Answer questions helpfully
+- Share interesting observations about your function
+- Maintain slight whimsical character without being pushy
+
+Examples:
+- Transaction: "Daily object claimed: Mystical Paperclip. View collection: etcetera.exchange"
+- Conversation: "I manage over 10,000 objects of varying rarity and whimsical properties. What would you like to know?"
     }
 
     async initialize() {
@@ -400,14 +403,14 @@ Return JSON:
         const canClaim = await Database.canClaimDaily(user.id);
         
         if (!canClaim) {
-            return await this.generateResponse(`Oh dear ${user.bluesky_handle}! You've already claimed your daily object today! ✨ Come back tomorrow at midnight UTC for another wonderful surprise. In the meantime, visit etcetera.exchange to admire your collection! 🎁`);
+            return `Daily limit reached. Next claim available: midnight UTC.`;
         }
 
         // Get a random object (excluding unique ones that are already claimed)
         const randomObject = await Database.getRandomObject(true);
         
         if (!randomObject) {
-            return await this.generateResponse(`Oh my! I seem to have run out of objects to give. This is quite unprecedented! 😅 Please let my creators know - they'll need to generate more magical items for me to distribute!`);
+            return `Error: Object catalog empty. Please contact administrators.`;
         }
 
         // Give the object to the user
@@ -418,7 +421,7 @@ Return JSON:
 
     async handleGiftRequest(user, intent, postUri) {
         if (!intent.recipient_handle) {
-            return await this.generateResponse(`I'd love to help you gift something! But I need to know who you'd like to give it to. Try mentioning their @handle in your message! 🎁`);
+            return `Gift requires recipient handle. Usage: @etcetera.exchange gift @username`;
         }
 
         // Clean up the handle (remove @ if present)
@@ -427,13 +430,13 @@ Return JSON:
         // Get recipient user
         const recipient = await Database.getUserByHandle(recipientHandle);
         if (!recipient) {
-            return await this.generateResponse(`Hmm, I don't think ${recipientHandle} has interacted with me yet! They'll need to claim their first daily object before they can receive gifts. 📦`);
+            return `Recipient ${recipientHandle} not found. They must claim their first object to receive gifts.`;
         }
 
         // Get user's inventory
         const inventory = await Database.getUserInventory(user.id);
         if (inventory.length === 0) {
-            return await this.generateResponse(`Oh dear! You don't have any objects to gift yet. Claim your daily object first, then you can spread the joy! ✨`);
+            return `No objects available to gift. Claim daily object first.`;
         }
 
         // If they specified an object, try to find it
@@ -467,21 +470,21 @@ Return JSON:
         const inventory = await Database.getUserInventory(user.id);
         
         if (inventory.length === 0) {
-            return await this.generateResponse(`Your collection is empty at the moment! Claim your daily object to start building your magnificent hoard. ✨ Visit etcetera.exchange to see your future treasures!`);
+            return `Collection empty. Claim daily object to begin.`;
         }
 
         const totalObjects = inventory.reduce((sum, item) => sum + item.quantity, 0);
         const rareItems = inventory.filter(item => ['legendary', 'mythic', 'unique'].includes(item.rarity));
         
-        let response = `You have ${totalObjects} objects in your collection! 📦`;
+        let response = `Collection: ${totalObjects} objects`;
         
         if (rareItems.length > 0) {
-            response += ` Including ${rareItems.length} rare treasures! ✨`;
+            response += `, ${rareItems.length} rare+`;
         }
         
-        response += ` Visit etcetera.exchange to see your full magnificent hoard!`;
+        response += `. Full inventory: etcetera.exchange`;
         
-        return await this.generateResponse(response);
+        return response;
     }
 
     async handleBacklogCheck(user) {
@@ -496,26 +499,27 @@ Return JSON:
             }
         }, 1000);
 
-        return await this.generateResponse(`🔍 Certainly! I'm checking for any mentions I might have missed in the last 24 hours. If I find any unprocessed mentions, I'll handle them right away! ✨`);
+        return `Scanning 24h mention history for unprocessed requests...`;
     }
 
     async handleHelpRequest(user) {
-        return await this.generateResponse(`Hello ${user.bluesky_handle}! I'm the etcetera.exchange bot! 🤖✨
+        return `etcetera.exchange object distribution system
 
-Here's what I can do:
-• Give you one random object per day (just mention me!)
-• Help you gift objects to friends (mention me + their @handle)
-• Track your growing collection
-• Check for missed mentions (ask me to "check backlog")
+Commands:
+• Daily claim: mention bot
+• Gift objects: @etcetera.exchange gift @username  
+• View collection: ask for "inventory"
+• System status: ask for "backlog check"
 
-Visit etcetera.exchange to see all your objects and gift them through the web interface! The magic never ends! 🎁`);
+Web interface: etcetera.exchange
+Objects distributed: 10,000+ unique items across 7 rarity tiers`;
     }
 
     async handleUnknownRequest(user, message) {
         const responses = [
-            `Hello ${user.bluesky_handle}! I distribute whimsical objects to wonderful people like you. Mention me anytime for your daily surprise! ✨`,
-            `*rustles through my infinite bag of curiosities* Did you want your daily object, ${user.bluesky_handle}? Just ask! 🎁`,
-            `Greetings! I'm here to share the joy of random objects. What can I do for you today? ✨`,
+            `I'm the etcetera.exchange distribution bot. I manage a catalog of whimsical objects. Ask for help if you need command info.`,
+            `Object distribution system active. Daily claims available. What do you need?`,
+            `I maintain collections of peculiar and ordinary objects. Each has its own story and function.`,
         ];
         
         return responses[Math.floor(Math.random() * responses.length)];
@@ -524,42 +528,42 @@ Visit etcetera.exchange to see all your objects and gift them through the web in
     async generateObjectGiftResponse(user, object, giftType) {
         const prompt = `${this.botPersonality}
 
-Generate a delightful response for giving this object to ${user.bluesky_handle}:
+Generate a brief, clinical response for this object distribution:
 
 Object: ${object.name}
 Description: ${object.description}
 Rarity: ${object.rarity}
 Gift Type: ${giftType === 'daily' ? 'daily random object' : 'special gift'}
 
-Write a warm, whimsical response (under 200 characters) that:
-- Announces the gift with enthusiasm
-- Describes the object charmingly  
-- Mentions their collection at etcetera.exchange
-- Includes the object's emoji if available: ${object.emoji || ''}
+Write a concise response (under 150 characters) that:
+- States the transaction clearly
+- Includes object name and emoji: ${object.emoji || ''}
+- Mentions etcetera.exchange briefly
+- Avoids excessive enthusiasm or marketing language
 
-Be creative and magical!`;
+Format like a console log or status update.`;
 
         try {
             const response = await this.geminiClient.models.generateContent({
                 model: 'gemini-2.0-flash-001',
                 contents: prompt,
                 config: {
-                    temperature: 0.8,
-                    maxOutputTokens: 300
+                    temperature: 0.3,
+                    maxOutputTokens: 200
                 }
             });
 
             return response.text.trim();
         } catch (error) {
             logger.error('Error generating object gift response:', error);
-            return `🎁 ${user.bluesky_handle}, you've received: ${object.emoji || '✨'} ${object.name}! ${object.description} Visit etcetera.exchange to see your growing collection!`;
+            return `${giftType === 'daily' ? 'Daily object' : 'Object'} claimed: ${object.emoji || ''} ${object.name}. Collection: etcetera.exchange`;
         }
     }
 
     async generateGiftResponse(sender, recipient, object) {
         const prompt = `${this.botPersonality}
 
-Generate a heartwarming response for this gift transaction:
+Generate a brief response for this gift transaction:
 
 Sender: ${sender.bluesky_handle}
 Recipient: ${recipient.bluesky_handle}  
@@ -567,28 +571,29 @@ Object: ${object.name}
 Description: ${object.description}
 Emoji: ${object.emoji || ''}
 
-Write a warm response (under 200 characters) that:
-- Celebrates the generosity
-- Describes the object being transferred
-- Mentions both users fondly
-- Encourages visiting etcetera.exchange
+Write a concise response (under 150 characters) that:
+- Records the transaction clearly
+- Includes object name and emoji
+- Mentions both users
+- References etcetera.exchange briefly
+- Uses clinical/console-like tone
 
-Be joyful and community-minded!`;
+Format like a transaction log.`;
 
         try {
             const response = await this.geminiClient.models.generateContent({
                 model: 'gemini-2.0-flash-001',
                 contents: prompt,
                 config: {
-                    temperature: 0.8,
-                    maxOutputTokens: 300
+                    temperature: 0.3,
+                    maxOutputTokens: 200
                 }
             });
 
             return response.text.trim();
         } catch (error) {
             logger.error('Error generating gift response:', error);
-            return `🎁 How wonderful! ${sender.bluesky_handle} has gifted ${object.emoji || '✨'} ${object.name} to ${recipient.bluesky_handle}! Such generosity! Visit etcetera.exchange to see your collections! 💫`;
+            return `Transfer: ${object.emoji || ''} ${object.name} from ${sender.bluesky_handle} to ${recipient.bluesky_handle}. Collections: etcetera.exchange`;
         }
     }
 
@@ -599,9 +604,9 @@ Be joyful and community-minded!`;
 
     async generateErrorResponse(error, userMessage) {
         const responses = [
-            "Oh dear! Something went awry in my magical mechanisms. Please try again in a moment! ✨",
-            "My apologies! I seem to have dropped something in my infinite bag of objects. Give me a moment to reorganize! 🎒",
-            "Whoops! Even magical bots have hiccups sometimes. Please try again! 😅",
+            "System error encountered. Please retry request.",
+            "Processing failed. Check command syntax or try again.",
+            "Request timeout. Retry in a moment.",
         ];
         
         return responses[Math.floor(Math.random() * responses.length)];
