@@ -205,7 +205,7 @@ export default function ProfilePage() {
                 >
                   <div className="text-3xl mb-2">{stat.icon}</div>
                   <div className="text-3xl font-bold mb-1">
-                    {userStats[stat.key as keyof typeof userStats]}
+                    {String(userStats[stat.key as keyof typeof userStats])}
                   </div>
                   <div className="text-sm text-white/90">{stat.label}</div>
                 </motion.div>

@@ -52,7 +52,7 @@ export async function GET(
       'webp': 'image/webp'
     }[ext!] || 'image/jpeg'
 
-    return new Response(imageBuffer, {
+    return new Response(new Uint8Array(imageBuffer), {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=31536000', // Cache for 1 year

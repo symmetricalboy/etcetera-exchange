@@ -360,7 +360,7 @@ function ObjectCard({ object }: ObjectCardProps) {
               {Object.entries(object.stats).map(([stat, value]) => (
                 <div key={stat} className="flex justify-between text-xs">
                   <span className="capitalize text-gray-600 dark:text-gray-400">{stat}:</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{value}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{String(value)}</span>
                 </div>
               ))}
             </div>

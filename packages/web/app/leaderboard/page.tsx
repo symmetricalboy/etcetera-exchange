@@ -151,7 +151,7 @@ export default function LeaderboardPage() {
                 >
                   <div className="text-3xl mb-1">{getRankIcon(index + 1)}</div>
                   <div className="text-lg font-bold">{player.user.displayName}</div>
-                  <div className="text-sm">{player[categories.find(c => c.id === activeCategory)?.key as keyof typeof player]} {categories.find(c => c.id === activeCategory)?.name}</div>
+                  <div className="text-sm">{String(player[categories.find(c => c.id === activeCategory)?.key as keyof typeof player])} {categories.find(c => c.id === activeCategory)?.name}</div>
                 </motion.div>
               ))}
             </div>
@@ -294,7 +294,7 @@ export default function LeaderboardPage() {
                       whileHover={{ scale: 1.05 }}
                     >
                       <div className="text-3xl font-bold text-yellow-600">
-                        {player[categories.find(c => c.id === activeCategory)?.key as keyof typeof player]}
+                        {String(player[categories.find(c => c.id === activeCategory)?.key as keyof typeof player])}
                       </div>
                       <div className="text-sm text-gray-500">
                         {categories.find(c => c.id === activeCategory)?.name}
