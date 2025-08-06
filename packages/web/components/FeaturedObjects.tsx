@@ -93,11 +93,20 @@ function ObjectCard({ object }: ObjectCardProps) {
       <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-600">
         {object.image_url ? (
           <Image
-            src={object.image_url}
+            src={`/api/images/${object.image_url}`}
             alt={object.name}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            onError={(e) => {
+              // Fallback to emoji if image fails to load
+              const target = e.target as HTMLImageElement
+              target.style.display = 'none'
+              const parent = target.parentElement
+              if (parent) {
+                parent.innerHTML = `<div class="w-full h-full flex items-center justify-center text-6xl">${object.emoji || '📦'}</div>`
+              }
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-6xl">
