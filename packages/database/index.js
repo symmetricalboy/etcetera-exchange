@@ -1,19 +1,31 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Create a connection pool
-const pool = new Pool({
+// Create separate pools for different use cases
+const botPool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    max: 20, // maximum number of clients in the pool
-    idleTimeoutMillis: 30000,
+    max: 15, // Priority pool for bot operations
+    idleTimeoutMillis: 20000,
+    connectionTimeoutMillis: 5000, // Longer timeout for bot operations
+});
+
+const webPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 10, // Smaller pool for web queries
+    idleTimeoutMillis: 15000,
     connectionTimeoutMillis: 2000,
 });
 
+// Backward compatibility - default to bot pool
+const pool = botPool;
+
 // Database utility functions
 class Database {
-    static async query(text, params) {
-        const client = await pool.connect();
+    static async query(text, params, useWebPool = false) {
+        const selectedPool = useWebPool ? webPool : botPool;
+        const client = await selectedPool.connect();
         try {
             const result = await client.query(text, params);
             return result;
@@ -22,8 +34,13 @@ class Database {
         }
     }
 
-    static async transaction(callback) {
-        const client = await pool.connect();
+    static async webQuery(text, params) {
+        return this.query(text, params, true);
+    }
+
+    static async transaction(callback, useWebPool = false) {
+        const selectedPool = useWebPool ? webPool : botPool;
+        const client = await selectedPool.connect();
         try {
             await client.query('BEGIN');
             const result = await callback(client);
@@ -235,7 +252,10 @@ class Database {
     }
 
     static async close() {
-        await pool.end();
+        await Promise.all([
+            botPool.end(),
+            webPool.end()
+        ]);
     }
 }
 

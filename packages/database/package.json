@@ -6,7 +6,8 @@
   "scripts": {
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
-    "reset": "node scripts/reset.js"
+    "reset": "node scripts/reset.js",
+    "test-concurrency": "node test-concurrency.js"
   },
   "dependencies": {
     "pg": "^8.11.0",
