@@ -1,0 +1,21 @@
+{
+  "name": "@etcetera/scripts",
+  "version": "1.0.0",
+  "description": "Object generation and utility scripts for etcetera.exchange",
+  "main": "index.js",
+  "scripts": {
+    "generate:objects": "node generate-objects.js",
+    "generate:batch": "node generate-objects.js --batch",
+    "test:generation": "node generate-objects.js --test"
+  },
+  "dependencies": {
+    "google-genai": "^0.1.0",
+    "@etcetera/database": "workspace:*",
+    "dotenv": "^16.4.0",
+    "fs-extra": "^11.2.0",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

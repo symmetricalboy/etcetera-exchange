@@ -1,0 +1,27 @@
+{
+  "name": "etcetera-exchange",
+  "version": "1.0.0",
+  "description": "A whimsical Bluesky bot that randomly distributes pretend objects to users",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "db:migrate": "cd packages/database && npm run migrate",
+    "bot:start": "cd packages/bot && npm start",
+    "web:dev": "cd packages/web && npm run dev",
+    "generate:objects": "cd packages/scripts && npm run generate:objects"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

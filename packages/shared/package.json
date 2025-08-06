@@ -1,0 +1,17 @@
+{
+  "name": "@etcetera/shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for etcetera.exchange",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
