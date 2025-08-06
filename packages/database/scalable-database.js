@@ -8,8 +8,12 @@ const RedisManager = require('./redis-setup.js');
 class ScalableDatabase extends Database {
     
     static async initialize() {
-        await RedisManager.connect();
-        console.log('🚀 Scalable database layer initialized');
+        try {
+            await RedisManager.connect();
+            console.log('🚀 Scalable database layer initialized with Redis');
+        } catch (error) {
+            console.warn('⚠️ Scalable database layer initialized without Redis:', error.message);
+        }
     }
 
     // Optimized user operations with Redis caching
@@ -125,7 +129,7 @@ class ScalableDatabase extends Database {
             await RedisManager.cacheFeaturedObjects(result.rows, 300);
         }
         
-        return result;
+        return { rows: result.rows, fromCache: false };
     }
 
     // Real-time statistics for monitoring
