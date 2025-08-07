@@ -33,33 +33,16 @@ class EtceteraBot {
         this.cooldownPeriod = 60000; // 1 minute cooldown
         
         // Bot personality and responses
-        this.botPersonality = `You are the etcetera.exchange object distribution bot. You maintain a vast catalog of whimsical objects and handle distribution requests.
-
-For TRANSACTIONAL responses (giving objects, processing claims, errors):
-- Be brief and clinical, like console output
-- State facts clearly without excessive enthusiasm
-- No pushy marketing about "come back tomorrow"
-- Format: action + result + minimal context
-- Use minimal emojis, prefer simple status indicators
-
-For CONVERSATIONAL responses (questions, chat, help):
-- Be friendly but not overly enthusiastic  
-- Answer questions helpfully
-- Share interesting observations about your function
-- Maintain slight whimsical character without being pushy
-
-Examples:
-- Transaction: "Daily object claimed: Mystical Paperclip. View collection: etcetera.exchange"
-- Conversation: "I manage over 10,000 objects of varying rarity and whimsical properties. What would you like to know?"
+        this.botPersonality = 'You are the etcetera.exchange object distribution bot. You maintain a vast catalog of whimsical objects and handle distribution requests.\n\nFor TRANSACTIONAL responses (giving objects, processing claims, errors):\n- Be brief and clinical, like console output\n- State facts clearly without excessive enthusiasm\n- No pushy marketing about "come back tomorrow"\n- Format: action + result + minimal context\n- Use minimal emojis, prefer simple status indicators\n\nFor CONVERSATIONAL responses (questions, chat, help):\n- Be friendly but not overly enthusiastic\n- Answer questions helpfully\n- Share interesting observations about your function\n- Maintain slight whimsical character without being pushy\n\nExamples:\n- Transaction: "Daily object claimed: Mystical Paperclip. View collection: etcetera.exchange"\n- Conversation: "I manage over 10,000 objects of varying rarity and whimsical properties. What would you like to know?"'
     }
 
     async initialize() {
         try {
-            logger.info('🤖 Initializing Etcetera Bot...');
+            logger.info('[BOT] Initializing Etcetera Bot...');
             
             // Initialize Redis-backed database
             await Database.initialize();
-            logger.info('✅ Scalable database layer initialized');
+            logger.info('[OK] Scalable database layer initialized');
             
             // Login to Bluesky
             await this.agent.login({
@@ -68,7 +51,7 @@ Examples:
             });
             
             this.botDid = this.agent.session?.did;
-            logger.info(`✅ Bot logged in successfully as ${this.botDid}`);
+            logger.info('[OK] Bot logged in successfully as ' + this.botDid);
             
             // Set up mention monitoring
             this.startMentionMonitoring();
@@ -77,16 +60,16 @@ Examples:
             this.setupDailyReset();
             
             this.isRunning = true;
-            logger.info('🚀 Bot is now running and monitoring mentions!');
+            logger.info('[START] Bot is now running and monitoring mentions!');
             
         } catch (error) {
-            logger.error('❌ Failed to initialize bot:', error);
+            logger.error('[ERROR] Failed to initialize bot:', error);
             throw error;
         }
     }
 
     async startMentionMonitoring() {
-        logger.info('👂 Starting mention monitoring...');
+        logger.info('[MONITOR] Starting mention monitoring...');
         
         // Check for any missed mentions from the last 24 hours on startup
         setTimeout(async () => {
@@ -118,7 +101,7 @@ Examples:
 
     async checkMissedMentions() {
         try {
-            logger.info('🔍 Checking for missed mentions from the last 24 hours...');
+            logger.info('[CHECK] Checking for missed mentions from the last 24 hours...');
             
             // Get mentions from the last 24 hours
             const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -134,11 +117,11 @@ Examples:
             });
 
             if (recentMentions.length === 0) {
-                logger.info('✅ No recent mentions found');
+                logger.info('[OK] No recent mentions found');
                 return;
             }
 
-            logger.info(`🔍 Found ${recentMentions.length} mentions from last 24 hours, checking which ones need processing...`);
+            logger.info('[CHECK] Found ' + recentMentions.length + ' mentions from last 24 hours, checking which ones need processing...');
 
             // Check which mentions we haven't processed yet
             const unprocessedMentions = [];
@@ -150,7 +133,7 @@ Examples:
             }
 
             if (unprocessedMentions.length > 0) {
-                logger.info(`📦 Found ${unprocessedMentions.length} unprocessed mentions, handling them now...`);
+                logger.info('[PROCESS] Found ' + unprocessedMentions.length + ' unprocessed mentions, handling them now...');
                 
                 for (const mention of unprocessedMentions) {
                     try {
@@ -158,11 +141,11 @@ Examples:
                         // Small delay between processing to avoid rate limits
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     } catch (error) {
-                        logger.error(`Error processing missed mention from ${mention.author.handle}:`, error);
+                        logger.error('Error processing missed mention from ' + mention.author.handle + ':', error);
                     }
                 }
             } else {
-                logger.info('✅ All recent mentions have been processed');
+                logger.info('[OK] All recent mentions have been processed');
             }
             
         } catch (error) {
@@ -200,7 +183,7 @@ Examples:
             });
 
             if (newMentions.length > 0) {
-                logger.info(`📬 Found ${newMentions.length} new mentions (after filtering)`);
+                logger.info('[NEW] Found ' + newMentions.length + ' new mentions (after filtering)');
                 
                 for (const mention of newMentions) {
                     await this.handleMention(mention);
@@ -225,7 +208,7 @@ Examples:
 
     async handleMention(mention) {
         try {
-            logger.info(`🗣️  Processing mention from ${mention.author.handle}`);
+            logger.info('[PROCESS] Processing mention from ' + mention.author.handle);
             
             const post = mention.record;
             const userMessage = post.text;
@@ -261,7 +244,7 @@ Examples:
             
             // Skip responding to purely conversational mentions
             if (intent.type === 'unknown' && intent.confidence < 0.5) {
-                logger.info(`🤷 Skipping low-confidence mention from ${authorHandle}: "${userMessage}"`);
+                logger.info('[SKIP] Skipping low-confidence mention from ' + authorHandle + ': "' + userMessage + '"');
                 return;
             }
             
@@ -293,7 +276,7 @@ Examples:
                 success = false;
                 errorMessage = error.message;
                 response = await this.generateErrorResponse(error, userMessage);
-                logger.error(`Error handling ${intent.type}:`, error);
+                logger.error('Error handling ' + intent.type + ':', error);
             }
 
             // Log the interaction
@@ -355,32 +338,7 @@ Examples:
 
     async parseUserIntent(message, userHandle) {
         try {
-            const prompt = `Analyze this message from ${userHandle} to the etcetera.exchange bot and determine their intent:
-
-"${message}"
-
-Possible intents:
-1. "daily_claim" - User explicitly wants their daily random object (clear requests like "give me an object", "daily claim", "I want something", "please give me one of your finest thingies")
-2. "gift_request" - User wants to gift an object to someone else (mentions giving/sending something to another user, includes @handles)  
-3. "inventory_check" - User wants to see what they own (words like "inventory", "collection", "what do I have", "my objects")
-4. "backlog_check" - User wants to check for missed mentions (words like "backlog", "missed mentions", "check backlog", "did you miss anything")
-5. "help" - User needs help or information about the bot
-6. "unknown" - Unclear intent, casual conversation, emotional reactions, or general chatter
-
-IMPORTANT: 
-- Excited reactions like "yayayayay", "awesome!", "thank you!" should be "unknown" with low confidence
-- Complaints or feedback about bot behavior should be "unknown" with low confidence  
-- Only classify as "daily_claim" if there's a clear REQUEST for an object, not just mentioning the bot
-- Conversations about the bot's behavior or problems should be "unknown"
-
-Be conservative - when in doubt, use "unknown" with low confidence.
-
-If it's a gift_request, try to extract:
-- recipient_handle: The @handle of who they want to gift to
-- object_description: What object they want to gift (if specified)
-
-Return JSON:
-{"type": "intent_type", "recipient_handle": "@handle", "object_description": "description", "confidence": 0.8}`;
+            const prompt = 'Analyze this message from ' + userHandle + ' to the etcetera.exchange bot and determine their intent:\n\n"' + message + '"\n\nPossible intents:\n1. "daily_claim" - User explicitly wants their daily random object (clear requests like "give me an object", "daily claim", "I want something", "please give me one of your finest thingies")\n2. "gift_request" - User wants to gift an object to someone else (mentions giving/sending something to another user, includes @handles)\n3. "inventory_check" - User wants to see what they own (words like "inventory", "collection", "what do I have", "my objects")\n4. "backlog_check" - User wants to check for missed mentions (words like "backlog", "missed mentions", "check backlog", "did you miss anything")\n5. "help" - User needs help or information about the bot\n6. "unknown" - Unclear intent, casual conversation, emotional reactions, or general chatter\n\nIMPORTANT:\n- Excited reactions like "yayayayay", "awesome!", "thank you!" should be "unknown" with low confidence\n- Complaints or feedback about bot behavior should be "unknown" with low confidence\n- Only classify as "daily_claim" if there\'s a clear REQUEST for an object, not just mentioning the bot\n- Conversations about the bot\'s behavior or problems should be "unknown"\n\nBe conservative - when in doubt, use "unknown" with low confidence.\n\nIf it\'s a gift_request, try to extract:\n- recipient_handle: The @handle of who they want to gift to\n- object_description: What object they want to gift (if specified)\n\nReturn JSON:\n{"type": "intent_type", "recipient_handle": "@handle", "object_description": "description", "confidence": 0.8}';
 
             const response = await this.geminiClient.models.generateContent({
                 model: 'gemini-2.0-flash-001',
@@ -403,14 +361,14 @@ Return JSON:
         const canClaim = await Database.canClaimDaily(user.id);
         
         if (!canClaim) {
-            return `Daily limit reached. Next claim available: midnight UTC.`;
+            return 'Daily limit reached. Next claim available: midnight UTC.';
         }
 
         // Get a random object (excluding unique ones that are already claimed)
         const randomObject = await Database.getRandomObject(true);
         
         if (!randomObject) {
-            return `Error: Object catalog empty. Please contact administrators.`;
+            return 'Error: Object catalog empty. Please contact administrators.';
         }
 
         // Give the object to the user
@@ -421,7 +379,7 @@ Return JSON:
 
     async handleGiftRequest(user, intent, postUri) {
         if (!intent.recipient_handle) {
-            return `Gift requires recipient handle. Usage: @etcetera.exchange gift @username`;
+            return 'Gift requires recipient handle. Usage: @etcetera.exchange gift @username';
         }
 
         // Clean up the handle (remove @ if present)
@@ -430,13 +388,13 @@ Return JSON:
         // Get recipient user
         const recipient = await Database.getUserByHandle(recipientHandle);
         if (!recipient) {
-            return `Recipient ${recipientHandle} not found. They must claim their first object to receive gifts.`;
+            return 'Recipient ' + recipientHandle + ' not found. They must claim their first object to receive gifts.';
         }
 
         // Get user's inventory
         const inventory = await Database.getUserInventory(user.id);
         if (inventory.length === 0) {
-            return `No objects available to gift. Claim daily object first.`;
+            return 'No objects available to gift. Claim daily object first.';
         }
 
         // If they specified an object, try to find it
@@ -460,7 +418,7 @@ Return JSON:
             objectToGift.object_id,
             1,
             postUri,
-            `Gift from ${user.bluesky_handle}`
+            'Gift from ' + user.bluesky_handle
         );
 
         return await this.generateGiftResponse(user, recipient, objectToGift);
@@ -470,25 +428,25 @@ Return JSON:
         const inventory = await Database.getUserInventory(user.id);
         
         if (inventory.length === 0) {
-            return `Collection empty. Claim daily object to begin.`;
+            return 'Collection empty. Claim daily object to begin.';
         }
 
         const totalObjects = inventory.reduce((sum, item) => sum + item.quantity, 0);
         const rareItems = inventory.filter(item => ['legendary', 'mythic', 'unique'].includes(item.rarity));
         
-        let response = `Collection: ${totalObjects} objects`;
+        let response = 'Collection: ' + totalObjects + ' objects';
         
         if (rareItems.length > 0) {
-            response += `, ${rareItems.length} rare+`;
+            response += ', ' + rareItems.length + ' rare+';
         }
         
-        response += `. Full inventory: etcetera.exchange`;
+        response += '. Full inventory: etcetera.exchange';
         
         return response;
     }
 
     async handleBacklogCheck(user) {
-        logger.info(`🔍 ${user.bluesky_handle} requested a backlog check`);
+        logger.info('[CHECK] ' + user.bluesky_handle + ' requested a backlog check');
         
         // Trigger the missed mentions check
         setTimeout(async () => {
@@ -499,49 +457,25 @@ Return JSON:
             }
         }, 1000);
 
-        return `Scanning 24h mention history for unprocessed requests...`;
+        return 'Scanning 24h mention history for unprocessed requests...';
     }
 
     async handleHelpRequest(user) {
-        return `etcetera.exchange object distribution system
-
-Commands:
-• Daily claim: mention bot
-• Gift objects: @etcetera.exchange gift @username  
-• View collection: ask for "inventory"
-• System status: ask for "backlog check"
-
-Web interface: etcetera.exchange
-Objects distributed: 10,000+ unique items across 7 rarity tiers`;
+        return 'etcetera.exchange object distribution system\n\nCommands:\n• Daily claim: mention bot\n• Gift objects: @etcetera.exchange gift @username\n• View collection: ask for "inventory"\n• System status: ask for "backlog check"\n\nWeb interface: etcetera.exchange\nObjects distributed: 10,000+ unique items across 7 rarity tiers';
     }
 
     async handleUnknownRequest(user, message) {
         const responses = [
-            `I'm the etcetera.exchange distribution bot. I manage a catalog of whimsical objects. Ask for help if you need command info.`,
-            `Object distribution system active. Daily claims available. What do you need?`,
-            `I maintain collections of peculiar and ordinary objects. Each has its own story and function.`,
+            'I\'m the etcetera.exchange distribution bot. I manage a catalog of whimsical objects. Ask for help if you need command info.',
+            'Object distribution system active. Daily claims available. What do you need?',
+            'I maintain collections of peculiar and ordinary objects. Each has its own story and function.',
         ];
         
         return responses[Math.floor(Math.random() * responses.length)];
     }
 
     async generateObjectGiftResponse(user, object, giftType) {
-        const prompt = `${this.botPersonality}
-
-Generate a brief, clinical response for this object distribution:
-
-Object: ${object.name}
-Description: ${object.description}
-Rarity: ${object.rarity}
-Gift Type: ${giftType === 'daily' ? 'daily random object' : 'special gift'}
-
-Write a concise response (under 150 characters) that:
-- States the transaction clearly
-- Includes object name and emoji: ${object.emoji || ''}
-- Mentions etcetera.exchange briefly
-- Avoids excessive enthusiasm or marketing language
-
-Format like a console log or status update.`;
+        const prompt = this.botPersonality + '\n\nGenerate a brief, clinical response for this object distribution:\n\nObject: ' + object.name + '\nDescription: ' + object.description + '\nRarity: ' + object.rarity + '\nGift Type: ' + (giftType === 'daily' ? 'daily random object' : 'special gift') + '\n\nWrite a concise response (under 150 characters) that:\n- States the transaction clearly\n- Includes object name and emoji: ' + (object.emoji || '') + '\n- Mentions etcetera.exchange briefly\n- Avoids excessive enthusiasm or marketing language\n\nFormat like a console log or status update.';
 
         try {
             const response = await this.geminiClient.models.generateContent({
@@ -556,29 +490,12 @@ Format like a console log or status update.`;
             return response.text.trim();
         } catch (error) {
             logger.error('Error generating object gift response:', error);
-            return `${giftType === 'daily' ? 'Daily object' : 'Object'} claimed: ${object.emoji || ''} ${object.name}. Collection: etcetera.exchange`;
+            return (giftType === 'daily' ? 'Daily object' : 'Object') + ' claimed: ' + (object.emoji || '') + ' ' + object.name + '. Collection: etcetera.exchange';
         }
     }
 
     async generateGiftResponse(sender, recipient, object) {
-        const prompt = `${this.botPersonality}
-
-Generate a brief response for this gift transaction:
-
-Sender: ${sender.bluesky_handle}
-Recipient: ${recipient.bluesky_handle}  
-Object: ${object.name}
-Description: ${object.description}
-Emoji: ${object.emoji || ''}
-
-Write a concise response (under 150 characters) that:
-- Records the transaction clearly
-- Includes object name and emoji
-- Mentions both users
-- References etcetera.exchange briefly
-- Uses clinical/console-like tone
-
-Format like a transaction log.`;
+        const prompt = this.botPersonality + '\n\nGenerate a brief response for this gift transaction:\n\nSender: ' + sender.bluesky_handle + '\nRecipient: ' + recipient.bluesky_handle + '\nObject: ' + object.name + '\nDescription: ' + object.description + '\nEmoji: ' + (object.emoji || '') + '\n\nWrite a concise response (under 150 characters) that:\n- Records the transaction clearly\n- Includes object name and emoji\n- Mentions both users\n- References etcetera.exchange briefly\n- Uses clinical/console-like tone\n\nFormat like a transaction log.';
 
         try {
             const response = await this.geminiClient.models.generateContent({
@@ -593,7 +510,7 @@ Format like a transaction log.`;
             return response.text.trim();
         } catch (error) {
             logger.error('Error generating gift response:', error);
-            return `Transfer: ${object.emoji || ''} ${object.name} from ${sender.bluesky_handle} to ${recipient.bluesky_handle}. Collections: etcetera.exchange`;
+            return 'Transfer: ' + (object.emoji || '') + ' ' + object.name + ' from ' + sender.bluesky_handle + ' to ' + recipient.bluesky_handle + '. Collections: etcetera.exchange';
         }
     }
 
@@ -635,14 +552,14 @@ Format like a transaction log.`;
                 reply: replyRef
             });
 
-            logger.info(`✅ Replied to ${postUri}`);
+            logger.info('[OK] Replied to ' + postUri);
             
         } catch (error) {
             logger.error('Error posting reply:', error);
             // Try posting without reply context as fallback
             try {
                 await this.agent.post({ text: text });
-                logger.info('✅ Posted as standalone (fallback)');
+                logger.info('[OK] Posted as standalone (fallback)');
             } catch (fallbackError) {
                 logger.error('Error with fallback post:', fallbackError);
             }
@@ -671,17 +588,17 @@ Format like a transaction log.`;
     setupDailyReset() {
         // Reset daily claims at midnight UTC
         const job = new cron.CronJob('0 0 * * *', () => {
-            logger.info('🌅 Daily reset - new objects available for claiming!');
+            logger.info('[RESET] Daily reset - new objects available for claiming!');
         }, null, true, 'UTC');
 
-        logger.info('⏰ Daily reset job scheduled for midnight UTC');
+        logger.info('[SCHEDULE] Daily reset job scheduled for midnight UTC');
     }
 
     async shutdown() {
-        logger.info('🛑 Shutting down bot...');
+        logger.info('[SHUTDOWN] Shutting down bot...');
         this.isRunning = false;
         await Database.close();
-        logger.info('✅ Bot shutdown complete');
+        logger.info('[OK] Bot shutdown complete');
     }
 }
 
