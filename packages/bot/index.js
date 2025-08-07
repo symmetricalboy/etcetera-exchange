@@ -350,12 +350,28 @@ class EtceteraBot {
                 }
             });
 
-            // Strip markdown code blocks if present
+            // Strip markdown code blocks and extract JSON more robustly
             let jsonText = response.text.trim();
-            if (jsonText.startsWith('```json') && jsonText.endsWith('```')) {
-                jsonText = jsonText.slice(7, -3).trim();
-            } else if (jsonText.startsWith('```') && jsonText.endsWith('```')) {
-                jsonText = jsonText.slice(3, -3).trim();
+            
+            // Handle various markdown formats
+            if (jsonText.includes('```json')) {
+                const start = jsonText.indexOf('```json') + 7;
+                const end = jsonText.indexOf('```', start);
+                if (end !== -1) {
+                    jsonText = jsonText.substring(start, end).trim();
+                }
+            } else if (jsonText.includes('```')) {
+                const start = jsonText.indexOf('```') + 3;
+                const end = jsonText.indexOf('```', start);
+                if (end !== -1) {
+                    jsonText = jsonText.substring(start, end).trim();
+                }
+            }
+            
+            // Try to extract just the JSON object if there's extra content
+            const jsonMatch = jsonText.match(/\{.*\}/s);
+            if (jsonMatch) {
+                jsonText = jsonMatch[0];
             }
             
             const parsed = JSON.parse(jsonText);
