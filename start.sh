@@ -1,8 +1,13 @@
 #!/bin/bash
+set -e  # Exit on any error
 
 # Railway startup script for etcetera.exchange
 
 echo "🚀 Starting etcetera.exchange..."
+
+# Set npm cache to tmp directory to avoid lock issues
+export NPM_CONFIG_CACHE=/tmp/.npm-cache
+export NPM_CONFIG_PREFER_OFFLINE=true
 
 # Check if we need to run database migrations
 if [ "$RAILWAY_ENVIRONMENT" = "production" ] && [ "$RUN_MIGRATIONS" = "true" ]; then
@@ -20,4 +25,4 @@ fi
 
 # Start the web application
 echo "🌐 Starting web application..."
-cd packages/web && npm start
+cd packages/web && exec npm start
