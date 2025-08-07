@@ -1,5 +1,5 @@
 const { BskyAgent } = require('@atproto/api');
-const genai = require('google-genai');
+const { GoogleGenAI } = require('@google/genai');
 const Database = require('@etcetera/database/scalable-database');
 const winston = require('winston');
 const cron = require('cron');
@@ -25,7 +25,7 @@ const logger = winston.createLogger({
 class EtceteraBot {
     constructor() {
         this.agent = new BskyAgent({ service: 'https://bsky.social' });
-        this.geminiClient = new genai.Client({ apiKey: process.env.GEMINI_API_KEY });
+        this.geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         this.botDid = null;
         this.isRunning = false;
         this.lastCheckTime = new Date();
@@ -342,9 +342,9 @@ class EtceteraBot {
             const prompt = 'Analyze this message from ' + userHandle + ' to the etcetera.exchange bot and determine their intent:\n\n"' + message + '"\n\nPossible intents:\n1. "daily_claim" - User explicitly wants their daily random object (clear requests like "give me an object", "daily claim", "I want something", "please give me one of your finest thingies")\n2. "gift_request" - User wants to gift an object to someone else (mentions giving/sending something to another user, includes @handles)\n3. "inventory_check" - User wants to see what they own (words like "inventory", "collection", "what do I have", "my objects")\n4. "backlog_check" - User wants to check for missed mentions (words like "backlog", "missed mentions", "check backlog", "did you miss anything")\n5. "help" - User needs help or information about the bot\n6. "unknown" - Unclear intent, casual conversation, emotional reactions, or general chatter\n\nIMPORTANT:\n- Excited reactions like "yayayayay", "awesome!", "thank you!" should be "unknown" with low confidence\n- Complaints or feedback about bot behavior should be "unknown" with low confidence\n- Only classify as "daily_claim" if there\'s a clear REQUEST for an object, not just mentioning the bot\n- Conversations about the bot\'s behavior or problems should be "unknown"\n\nBe conservative - when in doubt, use "unknown" with low confidence.\n\nIf it\'s a gift_request, try to extract:\n- recipient_handle: The @handle of who they want to gift to\n- object_description: What object they want to gift (if specified)\n\nReturn JSON:\n{"type": "intent_type", "recipient_handle": "@handle", "object_description": "description", "confidence": 0.8}';
 
             const response = await this.geminiClient.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
-                config: {
+                generationConfig: {
                     responseMimeType: "application/json",
                     temperature: 0.2
                 }
@@ -530,9 +530,9 @@ class EtceteraBot {
 
         try {
             const response = await this.geminiClient.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
-                config: {
+                generationConfig: {
                     temperature: 0.3,
                     maxOutputTokens: 200
                 }
@@ -550,9 +550,9 @@ class EtceteraBot {
 
         try {
             const response = await this.geminiClient.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash-001',
                 contents: prompt,
-                config: {
+                generationConfig: {
                     temperature: 0.3,
                     maxOutputTokens: 200
                 }
