@@ -350,7 +350,15 @@ class EtceteraBot {
                 }
             });
 
-            const parsed = JSON.parse(response.text);
+            // Strip markdown code blocks if present
+            let jsonText = response.text.trim();
+            if (jsonText.startsWith('```json') && jsonText.endsWith('```')) {
+                jsonText = jsonText.slice(7, -3).trim();
+            } else if (jsonText.startsWith('```') && jsonText.endsWith('```')) {
+                jsonText = jsonText.slice(3, -3).trim();
+            }
+            
+            const parsed = JSON.parse(jsonText);
             
             // Validate the response has required fields
             if (!parsed || !parsed.type || typeof parsed.type !== 'string') {
