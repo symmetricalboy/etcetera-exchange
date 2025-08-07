@@ -9,7 +9,7 @@
     "test:generation": "node generate-objects.js --test"
   },
   "dependencies": {
-    "@google/genai": "^1.12.0",
+    "@google/genai": "^1.13.0",
     "@etcetera/database": "file:../database",
     "dotenv": "^16.4.0",
     "fs-extra": "^11.2.0",
