@@ -1,5 +1,5 @@
 const { BskyAgent } = require('@atproto/api');
-const { GoogleGenAI } = require('@google/genai');
+const genai = require('google-genai');
 const Database = require('@etcetera/database/scalable-database');
 const winston = require('winston');
 const cron = require('cron');
@@ -25,7 +25,7 @@ const logger = winston.createLogger({
 class EtceteraBot {
     constructor() {
         this.agent = new BskyAgent({ service: 'https://bsky.social' });
-        this.geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        this.geminiClient = new genai.Client({ apiKey: process.env.GEMINI_API_KEY });
         this.botDid = null;
         this.isRunning = false;
         this.lastCheckTime = new Date();
@@ -279,11 +279,12 @@ class EtceteraBot {
                 logger.error('Error handling ' + intent.type + ':', error);
             }
 
-            // Log the interaction
+            // Log the interaction (ensure intent.type is never null)
+            const interactionType = intent.type || 'unknown';
             await Database.logInteraction(
                 user.id,
                 postUri,
-                intent.type,
+                interactionType,
                 userMessage,
                 response,
                 success,
@@ -341,7 +342,7 @@ class EtceteraBot {
             const prompt = 'Analyze this message from ' + userHandle + ' to the etcetera.exchange bot and determine their intent:\n\n"' + message + '"\n\nPossible intents:\n1. "daily_claim" - User explicitly wants their daily random object (clear requests like "give me an object", "daily claim", "I want something", "please give me one of your finest thingies")\n2. "gift_request" - User wants to gift an object to someone else (mentions giving/sending something to another user, includes @handles)\n3. "inventory_check" - User wants to see what they own (words like "inventory", "collection", "what do I have", "my objects")\n4. "backlog_check" - User wants to check for missed mentions (words like "backlog", "missed mentions", "check backlog", "did you miss anything")\n5. "help" - User needs help or information about the bot\n6. "unknown" - Unclear intent, casual conversation, emotional reactions, or general chatter\n\nIMPORTANT:\n- Excited reactions like "yayayayay", "awesome!", "thank you!" should be "unknown" with low confidence\n- Complaints or feedback about bot behavior should be "unknown" with low confidence\n- Only classify as "daily_claim" if there\'s a clear REQUEST for an object, not just mentioning the bot\n- Conversations about the bot\'s behavior or problems should be "unknown"\n\nBe conservative - when in doubt, use "unknown" with low confidence.\n\nIf it\'s a gift_request, try to extract:\n- recipient_handle: The @handle of who they want to gift to\n- object_description: What object they want to gift (if specified)\n\nReturn JSON:\n{"type": "intent_type", "recipient_handle": "@handle", "object_description": "description", "confidence": 0.8}';
 
             const response = await this.geminiClient.models.generateContent({
-                model: 'gemini-2.0-flash-001',
+                model: 'gemini-2.5-flash',
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",
@@ -349,7 +350,27 @@ class EtceteraBot {
                 }
             });
 
-            return JSON.parse(response.text);
+            const parsed = JSON.parse(response.text);
+            
+            // Validate the response has required fields
+            if (!parsed || !parsed.type || typeof parsed.type !== 'string') {
+                logger.warn('Invalid intent response from AI, using fallback:', response.text);
+                return { type: 'unknown', confidence: 0 };
+            }
+
+            // Validate the intent type is one of the allowed values
+            const validTypes = ['daily_claim', 'gift_request', 'inventory_check', 'backlog_check', 'help', 'unknown'];
+            if (!validTypes.includes(parsed.type)) {
+                logger.warn('Invalid intent type from AI:', parsed.type);
+                return { type: 'unknown', confidence: 0 };
+            }
+
+            return {
+                type: parsed.type,
+                recipient_handle: parsed.recipient_handle || null,
+                object_description: parsed.object_description || null,
+                confidence: parsed.confidence || 0
+            };
             
         } catch (error) {
             logger.error('Error parsing user intent:', error);
@@ -385,10 +406,40 @@ class EtceteraBot {
         // Clean up the handle (remove @ if present)
         const recipientHandle = intent.recipient_handle.replace('@', '');
         
-        // Get recipient user
-        const recipient = await Database.getUserByHandle(recipientHandle);
+        // Get or create recipient user
+        let recipient = await Database.getUserByHandle(recipientHandle);
         if (!recipient) {
-            return 'Recipient ' + recipientHandle + ' not found. They must claim their first object to receive gifts.';
+            // Try to resolve the recipient's real DID from Bluesky
+            let recipientDid = 'did:placeholder:' + recipientHandle;
+            let displayName = null;
+            let avatarUrl = null;
+            
+            try {
+                // Attempt to get the user's profile from Bluesky
+                const profileResponse = await this.agent.getProfile({ actor: recipientHandle });
+                if (profileResponse.data) {
+                    recipientDid = profileResponse.data.did;
+                    displayName = profileResponse.data.displayName;
+                    avatarUrl = profileResponse.data.avatar;
+                    logger.info('[PROFILE] Resolved real DID for ' + recipientHandle + ': ' + recipientDid);
+                }
+            } catch (profileError) {
+                logger.debug('Could not resolve profile for ' + recipientHandle + ', using placeholder DID');
+            }
+            
+            // Create a new user account for the recipient
+            try {
+                recipient = await Database.createOrUpdateUser(
+                    recipientDid,
+                    recipientHandle,
+                    displayName,
+                    avatarUrl
+                );
+                logger.info('[NEW USER] Created account for gift recipient: ' + recipientHandle);
+            } catch (error) {
+                logger.error('Error creating recipient account:', error);
+                return 'Error creating recipient account. Please try again.';
+            }
         }
 
         // Get user's inventory
@@ -479,7 +530,7 @@ class EtceteraBot {
 
         try {
             const response = await this.geminiClient.models.generateContent({
-                model: 'gemini-2.0-flash-001',
+                model: 'gemini-2.5-flash',
                 contents: prompt,
                 config: {
                     temperature: 0.3,
@@ -499,7 +550,7 @@ class EtceteraBot {
 
         try {
             const response = await this.geminiClient.models.generateContent({
-                model: 'gemini-2.0-flash-001',
+                model: 'gemini-2.5-flash',
                 contents: prompt,
                 config: {
                     temperature: 0.3,
